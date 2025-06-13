@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise Interativa: Mundial de Clubes FIFA 2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A single-page application with a top navigation bar for quick access to key sections: a high-level "Visão Geral", an interactive "Análise dos Clubes" with filters and detailed modal views, a "Probabilidades" section with a dynamic chart for comparing contenders, and a final "O Torneio" section discussing its format and controversies. This thematic structure was chosen to break down the dense report into digestible, task-oriented segments, allowing users to explore information non-linearly and focus on what interests them most, enhancing usability over a simple text-based layout. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: List of all 32 teams -> Goal: Organize/Explore -> Viz: Interactive Filterable Grid -> Interaction: Clickable filters (by confederation) update the displayed team cards -> Justification: Manages the large number of teams effectively, preventing information overload. -> Method: Vanilla JS DOM manipulation.
+        - Report Info: Team performance stats (Goals For/Against) -> Goal: Compare -> Viz: Bar Chart inside a modal -> Interaction: Displayed when a user requests team details -> Justification: Provides a quick, clear visual comparison of a team's offensive and defensive capabilities. -> Library: Chart.js.
+        - Report Info: Betting Odds -> Goal: Compare/Rank -> Viz: Horizontal Bar Chart -> Interaction: Hover to see exact odds -> Justification: Immediately communicates the hierarchy of tournament favorites in an intuitive visual format. -> Library: Chart.js.
+        - Report Info: Tournament controversies -> Goal: Inform/Contrast -> Viz: Two-column layout with pro/con arguments -> Interaction: Static display -> Justification: Presents balanced viewpoints clearly and concisely. -> Method: HTML/Tailwind.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 400px; max-height: 50vh; }
+        .team-performance-chart-container { position: relative; width: 100%; max-width: 400px; margin-left: auto; margin-right: auto; height: 200px; max-height: 30vh; }
+        .active-filter { background-color: #2563eb; color: white; }
+        .inactive-filter { background-color: #e5e7eb; color: #374151; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <header class="bg-white shadow-md sticky top-0 z-40">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl md:text-2xl font-bold text-blue-600">Mundial de Clubes 2025</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#overview" class="text-slate-600 hover:bg-blue-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Visão Geral</a>
+                        <a href="#analysis" class="text-slate-600 hover:bg-blue-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Análise dos Clubes</a>
+                        <a href="#odds" class="text-slate-600 hover:bg-blue-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Probabilidades</a>
+                        <a href="#tournament-impact" class="text-slate-600 hover:bg-blue-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">O Torneio</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section id="hero" class="bg-white py-12 md:py-20">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h2 class="text-3xl md:text-5xl font-extrabold text-slate-900 leading-tight">A Nova Era do Futebol de Clubes</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-slate-600">Explore uma análise interativa do novo formato da Copa do Mundo de Clubes da FIFA. Conheça as equipes, estatísticas de desempenho e as chances de cada uma na disputa pelo título global em 2025.</p>
+                <a href="#overview" class="mt-8 inline-block bg-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-blue-700 transition-colors">Começar a Exploração</a>
+            </div>
+        </section>
+
+        <section id="overview" class="py-16 bg-slate-100">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-slate-900">Visão Geral do Torneio</h2>
+                    <p class="mt-2 text-lg text-slate-600">Os números e a estrutura que definem a maior competição de clubes do mundo.</p>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <span class="text-4xl font-extrabold text-blue-600">32</span>
+                        <p class="mt-2 font-semibold text-slate-700">Equipes</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <span class="text-4xl font-extrabold text-blue-600">$1B</span>
+                        <p class="mt-2 font-semibold text-slate-700">Prêmio Total</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <span class="text-sm md:text-base font-bold text-blue-600">14 Jun - 13 Jul</span>
+                        <p class="mt-2 font-semibold text-slate-700">Período</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <span class="text-4xl font-extrabold text-blue-600">USA</span>
+                        <p class="mt-2 font-semibold text-slate-700">País Sede</p>
+                    </div>
+                </div>
+
+                <div class="mt-16 bg-white p-8 rounded-xl shadow">
+                    <h3 class="text-2xl font-bold text-center text-slate-900 mb-8">Formato da Competição</h3>
+                    <div class="relative flex flex-col md:flex-row items-center justify-between space-y-8 md:space-y-0 md:space-x-4">
+                        <div class="flex-1 text-center">
+                            <div class="bg-blue-100 text-blue-800 p-4 rounded-lg inline-block">
+                                <h4 class="font-bold">Fase de Grupos</h4>
+                                <p class="text-sm">8 grupos de 4 equipes</p>
+                            </div>
+                        </div>
+                        <div class="hidden md:block absolute top-1/2 left-1/4 -translate-y-1/2 w-1/4 h-0.5 bg-slate-300"></div>
+                        <div class="text-2xl font-bold text-slate-400 transform md:rotate-0 rotate-90">&rarr;</div>
+                        <div class="hidden md:block absolute top-1/2 right-1/4 -translate-y-1/2 w-1/4 h-0.5 bg-slate-300"></div>
+                        <div class="flex-1 text-center">
+                             <div class="bg-green-100 text-green-800 p-4 rounded-lg inline-block">
+                                <h4 class="font-bold">Mata-Mata</h4>
+                                <p class="text-sm">Top 2 avançam para as Oitavas</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="analysis" class="py-16">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-slate-900">Análise dos Clubes</h2>
+                    <p class="mt-2 text-lg text-slate-600">Filtre por confederação e explore o perfil de cada competidor.</p>
+                </div>
+                
+                <div id="filters" class="flex flex-wrap justify-center gap-2 mb-8">
+                    <button class="filter-btn active-filter py-2 px-4 rounded-full font-semibold transition" data-filter="Todos">Todos</button>
+                    <button class="filter-btn inactive-filter py-2 px-4 rounded-full font-semibold transition" data-filter="UEFA">UEFA</button>
+                    <button class="filter-btn inactive-filter py-2 px-4 rounded-full font-semibold transition" data-filter="CONMEBOL">CONMEBOL</button>
+                    <button class="filter-btn inactive-filter py-2 px-4 rounded-full font-semibold transition" data-filter="Concacaf">Concacaf</button>
+                    <button class="filter-btn inactive-filter py-2 px-4 rounded-full font-semibold transition" data-filter="AFC">AFC</button>
+                    <button class="filter-btn inactive-filter py-2 px-4 rounded-full font-semibold transition" data-filter="CAF">CAF</button>
+                    <button class="filter-btn inactive-filter py-2 px-4 rounded-full font-semibold transition" data-filter="OFC">OFC</button>
+                </div>
+                
+                <div id="teams-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                </div>
+            </div>
+        </section>
+        
+        <section id="odds" class="py-16 bg-slate-100">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-slate-900">Probabilidades de Vitória</h2>
+                    <p class="mt-2 text-lg text-slate-600">Quem são os favoritos para levantar o troféu? Compare as chances dos principais contendores.</p>
+                </div>
+                <div class="bg-white p-4 sm:p-6 md:p-8 rounded-xl shadow-lg">
+                    <div class="chart-container">
+                        <canvas id="oddsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tournament-impact" class="py-16">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-slate-900">O Torneio e Seu Impacto</h2>
+                    <p class="mt-2 text-lg text-slate-600">O novo formato traz oportunidades e controvérsias que dividem opiniões no mundo do futebol.</p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <h3 class="text-xl font-bold text-green-600 mb-4">Pontos Positivos</h3>
+                        <ul class="space-y-3 text-slate-700">
+                            <li class="flex items-start"><span class="text-green-500 mr-3 mt-1">✔</span><span>Maior prestígio e apelo global para o futebol de clubes.</span></li>
+                            <li class="flex items-start"><span class="text-green-500 mr-3 mt-1">✔</span><span>Prêmio financeiro substancial, com até $125 milhões para o campeão, incentivando a competitividade.</span></li>
+                            <li class="flex items-start"><span class="text-green-500 mr-3 mt-1">✔</span><span>Oportunidade para confrontos inéditos entre potências de diferentes continentes.</span></li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <h3 class="text-xl font-bold text-red-600 mb-4">Controvérsias</h3>
+                         <ul class="space-y-3 text-slate-700">
+                            <li class="flex items-start"><span class="text-red-500 mr-3 mt-1">✖</span><span>Calendário sobrecarregado, aumentando o risco de lesões e fadiga para os jogadores.</span></li>
+                            <li class="flex items-start"><span class="text-red-500 mr-3 mt-1">✖</span><span>Distribuição de receita desigual, favorecendo amplamente os clubes europeus e aumentando a disparidade financeira.</span></li>
+                             <li class="flex items-start"><span class="text-red-500 mr-3 mt-1">✖</span><span>Críticas de sindicatos de jogadores e ligas sobre a falta de consulta e o foco comercial da FIFA.</span></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="mt-12 space-y-6">
+                    <blockquote class="bg-slate-100 p-6 rounded-lg border-l-4 border-blue-500">
+                        <p class="text-slate-700 italic">"Como o torneio é a cada quatro anos, os jogadores terão tempo para se recuperar. Os avanços na ciência esportiva podem compensar o aumento da carga."</p>
+                        <cite class="block text-right mt-4 font-semibold text-slate-600">- Arsène Wenger, FIFA</cite>
+                    </blockquote>
+                     <blockquote class="bg-slate-100 p-6 rounded-lg border-l-4 border-red-500">
+                        <p class="text-slate-700 italic">"A FIFA está tratando os jogadores como mercadorias em sua busca por mais receita e influência, desconsiderando seu bem-estar."</p>
+                        <cite class="block text-right mt-4 font-semibold text-slate-600">- FIFPRO Europe</cite>
+                    </blockquote>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-slate-800 text-white mt-16">
+        <div class="container mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center text-sm text-slate-400">
+            <p>Aplicação Interativa desenvolvida com base na "Análise Estratégica da Copa do Mundo de Clubes FIFA 2025".</p>
+            <p>&copy; 2024. Todos os dados são para fins ilustrativos.</p>
+        </div>
+    </footer>
+
+    <div id="team-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50 p-4">
+        <div id="modal-content" class="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform scale-95 transition-transform duration-300">
+            <div class="sticky top-0 bg-white border-b border-slate-200 p-4 flex justify-between items-center z-10">
+                <h3 id="modal-team-name" class="text-xl md:text-2xl font-bold"></h3>
+                <button id="close-modal" class="text-slate-500 hover:text-slate-800 text-3xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <div id="modal-body"></div>
+            </div>
+        </div>
+    </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    const teamsData = [
+        {
+            id: 'al_hilal', name: 'Al Hilal', country: 'Arábia Saudita', confederation: 'AFC',
+            performance: { leaguePos: '1º (Saudi Pro League)', continental: 'Semifinais (AFC CL)', goalsFor: 101, goalsAgainst: 23 },
+            keyPlayers: [{ name: 'A. Mitrović', stat: '28 Gols (Liga)' }, { name: 'S. Al-Dawsari', stat: '26 Gols (Total)' }],
+            analysis: 'Domínio regional impressionante e elenco com estrelas internacionais. Considerado um "coringa" no torneio. A ausência de Neymar pode não impactar tanto, dado seu histórico de lesões.', odds: '+6600'
+        },
+        {
+            id: 'al_ahly', name: 'Al Ahly', country: 'Egito', confederation: 'CAF',
+            performance: { leaguePos: '1º (Egyptian PL)', continental: 'Campeão (CAF CL)', goalsFor: 75, goalsAgainst: 28 },
+            keyPlayers: [{ name: 'W. Abou Ali', stat: '18 Gols (Liga)' }, { name: 'Percy Tau', stat: 'Jogador Chave' }],
+            analysis: 'Clube mais bem-sucedido da África, com histórico de surpreender no Mundial. O elenco parece estar totalmente apto, o que aumenta seu potencial como "cavalo negro".', odds: '+20000'
+        },
+        {
+            id: 'wydad_casablanca', name: 'Wydad Casablanca', country: 'Marrocos', confederation: 'CAF',
+            performance: { leaguePos: 'N/A', continental: 'Campeão (CAF CL 2022)', goalsFor: 0, goalsAgainst: 0 },
+            keyPlayers: [], analysis: 'Qualificado como campeão da CAF Champions League de 2022, busca representar a força do futebol marroquino no cenário mundial.', odds: 'N/A'
+        },
+        {
+            id: 'monterrey', name: 'Monterrey', country: 'México', confederation: 'Concacaf',
+            performance: { leaguePos: '2º (Liga MX)', continental: 'Campeão (Concacaf CL 2021)', goalsFor: 27, goalsAgainst: 15 },
+            keyPlayers: [{ name: 'Sergio Canales', stat: 'Jogador Chave' }, { name: 'G. Berterame', stat: 'Jogador Chave' }],
+            analysis: 'Desempenho sólido na liga doméstica, mas enfrenta o desafio de competir com a elite europeia. Lesões de jogadores importantes como Carlos Salcedo podem ser um problema.', odds: '+25000'
+        },
+        {
+            id: 'seattle_sounders', name: 'Seattle Sounders', country: 'EUA', confederation: 'Concacaf',
+            performance: { leaguePos: 'N/A', continental: 'Campeão (Concacaf CL 2022)', goalsFor: 0, goalsAgainst: 0 },
+            keyPlayers: [], analysis: 'Representante dos EUA, qualificou-se ao vencer a Concacaf Champions League em 2022, trazendo a experiência da MLS para o palco global.', odds: 'N/A'
+        },
+        {
+            id: 'palmeiras', name: 'Palmeiras', country: 'Brasil', confederation: 'CONMEBOL',
+            performance: { leaguePos: '4º (Brasileirão)', continental: 'Campeão (Libertadores 2021)', goalsFor: 12, goalsAgainst: 8 },
+            keyPlayers: [{ name: 'Estêvão', stat: '11 Gols (Total)' }, { name: 'Flaco López', stat: '10 Gols (Total)' }],
+            analysis: 'Gigante brasileiro com grande potencial ofensivo e adaptabilidade tática. O retorno de jogadores-chave como Raphael Veiga será crucial para suas aspirações.', odds: '+5000'
+        },
+        {
+            id: 'flamengo', name: 'Flamengo', country: 'Brasil', confederation: 'CONMEBOL',
+            performance: { leaguePos: '1º (Brasileirão)', continental: 'Campeão (Libertadores 2022)', goalsFor: 24, goalsAgainst: 4 },
+            keyPlayers: [{ name: 'G. De Arrascaeta', stat: '9 Gols (Liga)' }, { name: 'Pedro', stat: '4 Gols (Liga)' }],
+            analysis: 'Considerado o desafiante não europeu mais provável a vencer. Chega em excelente forma, com defesa sólida e ataque eficiente, além de grande coesão de elenco.', odds: '+5000'
+        },
+        {
+            id: 'chelsea', name: 'Chelsea', country: 'Inglaterra', confederation: 'UEFA',
+            performance: { leaguePos: '6º (Premier League)', continental: 'Campeão (Conference League)', goalsFor: 103, goalsAgainst: 70 },
+            keyPlayers: [{ name: 'Cole Palmer', stat: '22 Gols (Liga)' }, { name: 'Nicolas Jackson', stat: '17 Gols (Total)' }],
+            analysis: 'Chega em boa forma recente, mas o elenco jovem e profundo enfrenta muitos desfalques por lesão e outras questões, o que pode ser um obstáculo contra adversários de ponta.', odds: '+1100'
+        },
+        {
+            id: 'real_madrid', name: 'Real Madrid', country: 'Espanha', confederation: 'UEFA',
+            performance: { leaguePos: '1º (La Liga)', continental: 'Campeão (Champions League)', goalsFor: 87, goalsAgainst: 26 },
+            keyPlayers: [{ name: 'Jude Bellingham', stat: '19 Gols (Liga)' }, { name: 'Vinicius Jr.', stat: '15 Gols (Liga)' }],
+            analysis: 'Principal favorito ao título. Possui um elenco formidável e histórico de sucesso, mas enfrenta o desafio de gerenciar a recuperação de vários jogadores-chave lesionados.', odds: '+400'
+        },
+        {
+            id: 'urawa_red_diamonds', name: 'Urawa Red Diamonds', country: 'Japão', confederation: 'AFC',
+            performance: { leaguePos: 'N/A', continental: 'Campeão (AFC CL 2023)', goalsFor: 0, goalsAgainst: 0 },
+            keyPlayers: [], analysis: 'Vencedor da AFC Champions League de 2023, representa a força e a disciplina tática do futebol japonês.', odds: 'N/A'
+        },
+        {
+            id: 'club_leon', name: 'Club León', country: 'México', confederation: 'Concacaf',
+            performance: { leaguePos: 'N/A', continental: 'Campeão (Concacaf CL 2023)', goalsFor: 0, goalsAgainst: 0 },
+            keyPlayers: [], analysis: 'Qualificado como campeão da Concacaf em 2023, buscará competir com a tradicional garra do futebol mexicano.', odds: 'N/A'
+        },
+        {
+            id: 'manchester_city', name: 'Manchester City', country: 'Inglaterra', confederation: 'UEFA',
+            performance: { leaguePos: '1º (Premier League)', continental: 'Quartas (Champions League)', goalsFor: 96, goalsAgainst: 34 },
+            keyPlayers: [{ name: 'Erling Haaland', stat: '27 Gols (Liga)' }, { name: 'Phil Foden', stat: '19 Gols (Liga)' }],
+            analysis: 'Forte candidato ao título, com elenco profundo e versatilidade tática. No entanto, ausências importantes e a fadiga do calendário podem ser desafios a superar.', odds: '+550'
+        },
+        {
+            id: 'psg', name: 'Paris Saint-Germain', country: 'França', confederation: 'UEFA',
+            performance: { leaguePos: '1º (Ligue 1)', continental: 'Semifinais (Champions League)', goalsFor: 81, goalsAgainst: 33 },
+            keyPlayers: [{ name: 'Kylian Mbappé', stat: '27 Gols (Liga)' }, { name: 'Vitinha', stat: '7 Gols (Liga)' }],
+            analysis: 'Chega em excelente momento e com grande poder de fogo, liderado por Mbappé. A lesão de Dembélé no início pode impactar a dinâmica ofensiva, mas ainda é um dos grandes favoritos.', odds: '+450'
+        },
+        {
+            id: 'inter_milan', name: 'Inter de Milão', country: 'Itália', confederation: 'UEFA',
+            performance: { leaguePos: '1º (Serie A)', continental: 'Oitavas (Champions League)', goalsFor: 89, goalsAgainst: 22 },
+            keyPlayers: [{ name: 'Lautaro Martínez', stat: '24 Gols (Liga)' }, { name: 'Marcus Thuram', stat: '13 Gols (Liga)' }],
+            analysis: 'Potência europeia e campeã italiana, busca redenção após a eliminação precoce na UCL. Lesões de jogadores importantes como Çalhanoğlu são a principal preocupação.', odds: '+1700'
+        },
+        {
+            id: 'juventus', name: 'Juventus', country: 'Itália', confederation: 'UEFA',
+            performance: { leaguePos: '3º (Serie A)', continental: 'Oitavas (Champions League)', goalsFor: 54, goalsAgainst: 31 },
+            keyPlayers: [{ name: 'Dušan Vlahović', stat: '16 Gols (Liga)' }, { name: 'Federico Chiesa', stat: '9 Gols (Liga)' }],
+            analysis: 'Busca um troféu para salvar uma temporada doméstica decepcionante. Enfrentará um grande teste contra o Man City na fase de grupos; o desempenho de suas estrelas será crucial.', odds: '+2800'
+        },
+        {
+            id: 'atletico_madrid', name: 'Atlético de Madrid', country: 'Espanha', confederation: 'UEFA',
+            performance: { leaguePos: '4º (La Liga)', continental: 'Oitavas (Champions League)', goalsFor: 70, goalsAgainst: 43 },
+            keyPlayers: [{ name: 'Antoine Griezmann', stat: '0.61 G+A/90' }, { name: 'Álvaro Morata', stat: '0.48 Gols/90' }],
+            analysis: 'Time aguerrido e construído para torneios, mas o extenso histórico de lesões do elenco pode comprometer a profundidade e a consistência necessárias para uma campanha longa.', odds: '+1500'
+        },
+        {
+            id: 'borussia_dortmund', name: 'Borussia Dortmund', country: 'Alemanha', confederation: 'UEFA',
+            performance: { leaguePos: '5º (Bundesliga)', continental: 'Finalista (Champions League)', goalsFor: 68, goalsAgainst: 43 },
+            keyPlayers: [{ name: 'Serhou Guirassy', stat: '21 Gols (Bundesliga)' }, { name: 'Niclas Füllkrug', stat: '3 Gols (UCL)' }],
+            analysis: 'Apesar da posição na liga, a campanha até a final da Champions League mostra seu potencial. A boa forma recente o torna um adversário perigoso, mesmo com algumas lesões.', odds: '+2500'
+        },
+        {
+            id: 'benfica', name: 'Benfica', country: 'Portugal', confederation: 'UEFA',
+            performance: { leaguePos: '2º (Primeira Liga)', continental: 'Quartas (Europa League)', goalsFor: 77, goalsAgainst: 28 },
+            keyPlayers: [{ name: 'Rafa Silva', stat: '22 Gols (Total)' }, { name: 'Ángel Di María', stat: 'Jogador Chave' }],
+            analysis: 'Busca se reafirmar no cenário global após perder o título português. A experiência de jogadores como Di María será vital para liderar a equipe em um torneio curto e intenso.', odds: '+4000'
+        },
+        {
+            id: 'fc_porto', name: 'FC Porto', country: 'Portugal', confederation: 'UEFA',
+            performance: { leaguePos: '3º (Primeira Liga)', continental: 'Oitavas (Champions League)', goalsFor: 63, goalsAgainst: 27 },
+            keyPlayers: [{ name: 'Galeno', stat: '5 Gols (UCL)' }, { name: 'Evanilson', stat: '4 Gols (UCL)' }],
+            analysis: 'Chega em boa forma e com um grupo teoricamente mais acessível, o que pode favorecer uma campanha até as fases eliminatórias. A experiência em competições europeias é um diferencial.', odds: '+5000'
+        },
+        {
+            id: 'boca_juniors', name: 'Boca Juniors', country: 'Argentina', confederation: 'CONMEBOL',
+            performance: { leaguePos: '2º (Liga Arg - Grp A)', continental: 'Finalista (Libertadores 2023)', goalsFor: 24, goalsAgainst: 11 },
+            keyPlayers: [{ name: 'Miguel Merentiel', stat: '7 Gols (Liga)' }, { name: 'Edinson Cavani', stat: '7 Gols (Copa Liga)' }],
+            analysis: 'Clube de grande tradição, mas enfrenta desafios de preparação, com mudanças de técnico e a lesão do astro Cavani, o que pode afetar a coesão da equipe.', odds: '+7500'
+        },
+        {
+            id: 'river_plate', name: 'River Plate', country: 'Argentina', confederation: 'CONMEBOL',
+            performance: { leaguePos: '2º (Liga Argentina)', continental: 'Semifinais (Libertadores)', goalsFor: 21, goalsAgainst: 9 },
+            keyPlayers: [{ name: 'Franco Mastantuono', stat: '7 Gols (Liga)' }, { name: 'Miguel Borja', stat: '28 Gols (Total 2024)' }],
+            analysis: 'Liderado pelo ambicioso técnico Marcelo Gallardo, é visto como um dos maiores desafios para os europeus. Possui mentalidade vencedora e elenco profundo, apesar das lesões.', odds: '+6500'
+        },
+        {
+            id: 'fluminense', name: 'Fluminense', country: 'Brasil', confederation: 'CONMEBOL',
+            performance: { leaguePos: 'N/A', continental: 'Campeão (Libertadores 2023)', goalsFor: 0, goalsAgainst: 0 },
+            keyPlayers: [], analysis: 'Campeão da Libertadores de 2023, o Fluminense trará seu estilo de jogo característico e a experiência de uma conquista continental recente.', odds: 'N/A'
+        },
+        {
+            id: 'botafogo', name: 'Botafogo', country: 'Brasil', confederation: 'CONMEBOL',
+            performance: { leaguePos: '6º (Brasileirão)', continental: 'Campeão (Libertadores 2024)', goalsFor: 14, goalsAgainst: 7 },
+            keyPlayers: [{ name: 'Igor Jesus', stat: '3 Gols (Liga)' }, { name: 'J. Savarino', stat: 'Principal Criador' }],
+            analysis: 'Apesar do título da Libertadores, a equipe enfrenta um cenário difícil com a perda de jogadores-chave e uma queda de desempenho, caindo no "grupo da morte".', odds: '+7500'
+        },
+        {
+            id: 'rb_salzburg', name: 'Red Bull Salzburg', country: 'Áustria', confederation: 'UEFA',
+            performance: { leaguePos: '2º (Bundesliga Aus.)', continental: 'Fase de Grupos (UCL)', goalsFor: 74, goalsAgainst: 29 },
+            keyPlayers: [{ name: 'Oscar Gloukh', stat: '10 Gols (Liga)' }, { name: 'Dorgeles Nene', stat: '13 Gols (Liga)' }],
+            analysis: 'Conhecido por desenvolver jovens talentos, o time austríaco pode surpreender. No entanto, a falta de experiência e lesões importantes podem ser grandes desafios.', odds: '+8000'
+        },
+        {
+            id: 'pachuca', name: 'Pachuca', country: 'México', confederation: 'Concacaf',
+            performance: { leaguePos: '7º (Liga MX)', continental: 'Campeão (Concacaf Cup 2024)', goalsFor: 34, goalsAgainst: 27 },
+            keyPlayers: [{ name: 'John Kennedy', stat: 'Jogador Chave' }],
+            analysis: 'Enfrenta um grupo muito difícil e uma longa lista de lesões, o que compromete seriamente suas chances. Superar as expectativas exigirá uma performance excepcional.', odds: '+17500'
+        },
+        {
+            id: 'bayern_munich', name: 'Bayern de Munique', country: 'Alemanha', confederation: 'UEFA',
+            performance: { leaguePos: '3º (Bundesliga)', continental: 'Semifinais (Champions League)', goalsFor: 94, goalsAgainst: 45 },
+            keyPlayers: [{ name: 'Harry Kane', stat: '26 Gols (Liga)' }, { name: 'Jamal Musiala', stat: '12 Gols (Liga)' }],
+            analysis: 'Potência tradicional que busca se redimir após uma rara temporada sem troféus. O desempenho dependerá da adaptação às lesões e ao novo técnico Vincent Kompany.', odds: '+650'
+        },
+         {
+            id: 'auckland_city', name: 'Auckland City', country: 'Nova Zelândia', confederation: 'OFC',
+            performance: { leaguePos: 'N/A', continental: 'Melhor Ranking OFC', goalsFor: 0, goalsAgainst: 0 },
+            keyPlayers: [], analysis: 'Representante da Oceania, o Auckland City traz a experiência de ser uma presença constante em competições da FIFA, buscando competir contra adversários de maior porte.', odds: 'N/A'
+        }
+    ];
+
+    const teamsGrid = document.getElementById('teams-grid');
+    const filters = document.getElementById('filters');
+    const modal = document.getElementById('team-modal');
+    const modalContent = document.getElementById('modal-content');
+    const closeModalBtn = document.getElementById('close-modal');
+    
+    let activeFilter = 'Todos';
+    let teamPerfChart = null;
+
+    const renderTeams = () => {
+        teamsGrid.innerHTML = '';
+        const filteredTeams = teamsData.filter(team => activeFilter === 'Todos' || team.confederation === activeFilter);
+        
+        filteredTeams.forEach(team => {
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 transform hover:-translate-y-1';
+            card.innerHTML = `
+                <div class="p-6">
+                    <div class="flex items-center space-x-4">
+                        <div class="flex-shrink-0">
+                            <div class="h-12 w-12 rounded-full bg-slate-200 flex items-center justify-center text-2xl font-bold text-slate-600">${team.name.charAt(0)}</div>
+                        </div>
+                        <div>
+                            <p class="text-lg font-bold text-slate-900">${team.name}</p>
+                            <p class="text-sm text-slate-500">${team.country}</p>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button class="w-full view-details-btn bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 transition" data-id="${team.id}">Ver Detalhes</button>
+                    </div>
+                </div>
+            `;
+            teamsGrid.appendChild(card);
+        });
+    };
+
+    const openModal = (teamId) => {
+        const team = teamsData.find(t => t.id === teamId);
+        if (!team) return;
+
+        document.getElementById('modal-team-name').textContent = team.name;
+        const modalBody = document.getElementById('modal-body');
+
+        modalBody.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="text-lg font-bold mb-3 text-slate-800 border-b pb-2">Desempenho (2024/25)</h4>
+                    <ul class="space-y-2 text-slate-600">
+                        <li><strong>Liga:</strong> ${team.performance.leaguePos}</li>
+                        <li><strong>Continental:</strong> ${team.performance.continental}</li>
+                    </ul>
+                    <div class="team-performance-chart-container mt-4">
+                        <canvas id="teamPerfChartCanvas"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-lg font-bold mb-3 text-slate-800 border-b pb-2">Jogadores-Chave</h4>
+                    <ul class="space-y-2 text-slate-600">
+                        ${team.keyPlayers.map(p => `<li><strong>${p.name}:</strong> ${p.stat}</li>`).join('') || '<li>N/A</li>'}
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-6">
+                <h4 class="text-lg font-bold mb-3 text-slate-800 border-b pb-2">Análise</h4>
+                <p class="text-slate-600">${team.analysis}</p>
+            </div>
+        `;
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => modalContent.classList.remove('scale-95'), 10);
+        
+        if (teamPerfChart) {
+            teamPerfChart.destroy();
+        }
+
+        if (team.performance.goalsFor > 0 || team.performance.goalsAgainst > 0) {
+            const ctx = document.getElementById('teamPerfChartCanvas').getContext('2d');
+            teamPerfChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Gols Marcados', 'Gols Sofridos'],
+                    datasets: [{
+                        label: 'Gols na Liga',
+                        data: [team.performance.goalsFor, team.performance.goalsAgainst],
+                        backgroundColor: ['rgba(59, 130, 246, 0.7)', 'rgba(239, 68, 68, 0.7)'],
+                        borderColor: ['rgba(59, 130, 246, 1)', 'rgba(239, 68, 68, 1)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+    };
+
+    const closeModal = () => {
+        modalContent.classList.add('scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }, 300);
+    };
+
+    filters.addEventListener('click', (e) => {
+        if (e.target.classList.contains('filter-btn')) {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active-filter');
+                btn.classList.add('inactive-filter');
+            });
+            e.target.classList.add('active-filter');
+            e.target.classList.remove('inactive-filter');
+            activeFilter = e.target.dataset.filter;
+            renderTeams();
+        }
+    });
+
+    teamsGrid.addEventListener('click', (e) => {
+        const btn = e.target.closest('.view-details-btn');
+        if (btn) {
+            openModal(btn.dataset.id);
+        }
+    });
+
+    closeModalBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+    
+    const renderOddsChart = () => {
+        const oddsData = teamsData
+            .filter(t => t.odds && t.odds !== 'N/A')
+            .map(t => {
+                let numericOdds;
+                if (t.odds.startsWith('+')) {
+                    numericOdds = parseInt(t.odds.substring(1), 10);
+                } else {
+                    numericOdds = 10000; // Default large for unparsable
+                }
+                return { ...t, numericOdds };
+            })
+            .sort((a, b) => a.numericOdds - b.numericOdds)
+            .slice(0, 15);
+
+        const ctx = document.getElementById('oddsChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: oddsData.map(t => `${t.name} (${t.country})`),
+                datasets: [{
+                    label: 'Probabilidade de Vitória (Quanto menor a barra, maior a chance)',
+                    data: oddsData.map(t => t.numericOdds),
+                    backgroundColor: 'rgba(37, 99, 235, 0.8)',
+                    borderColor: 'rgba(37, 99, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const team = oddsData[context.dataIndex];
+                                return `Odds: ${team.odds}`;
+                            }
+                        }
+                    },
+                     title: {
+                        display: true,
+                        text: 'Probabilidade de Vitória (Menor é Melhor)',
+                        padding: {
+                            top: 10,
+                            bottom: 20
+                        },
+                        font: {
+                            size: 16
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Odds de Aposta (Formato Americano)'
+                        }
+                    },
+                    y: {
+                       ticks: {
+                           autoSkip: false
+                       }
+                    }
+                }
+            }
+        });
+    };
+
+    renderTeams();
+    renderOddsChart();
+});
+</script>
+
+</body>
+</html>
